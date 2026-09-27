@@ -86,6 +86,35 @@ test('clés papillon : mortaises dans les deux tronçons, clés à part', () => 
   assert.ok(sum < full && full - sum < 0.01 * full, `${full} vs ${sum}`);
 });
 
+test('clés papillon cachées : insérées par-dessous, face du dessus intacte', () => {
+  for (const params of [{ depth: 300, units: 2, frontStyle: 'full' }, { depth: 250 }]) {
+    const { layout, parts } = buildRack(wasm, params);
+    const { tb, params: P } = layout;
+    const bodies = parts.filter((p) => p.kind === 'body').map((p) => toManifold(p.mesh));
+    const body = Manifold.union(bodies);
+    const keys = parts.filter((p) => p.kind === 'key');
+    assert.ok(keys.length);
+    let checked = 0;
+    for (const k of keys) {
+      for (const inst of toManifold(k.mesh).decompose()) {
+        const b = inst.boundingBox();
+        const size = [0, 1, 2].map((i) => b.max[i] - b.min[i]);
+        const thin = size.indexOf(Math.min(...size));
+        if (thin !== 2) continue; // clés du fond
+        // la clé affleure la face du dessous et s'arrête sous la peau
+        assert.ok(Math.abs(b.min[2]) < 1e-4, 'clé du fond insérée par-dessous');
+        assert.ok(Math.abs(b.max[2] - (tb - P.keySkin)) < 1e-4);
+        // la peau au-dessus de la clé est pleine : rien n'est visible sur le dessus
+        const skin = Manifold.cube([size[0], size[1], P.keySkin - 0.02]).translate([b.min[0], b.min[1], tb - P.keySkin + 0.01]);
+        const filled = body.intersect(skin).volume();
+        assert.ok(Math.abs(filled - skin.volume()) < 1e-3, `peau percée (${filled} / ${skin.volume()})`);
+        checked++;
+      }
+    }
+    assert.ok(checked > 0);
+  }
+});
+
 test('façade : ouverte < ajourée < pleine (matière)', () => {
   const v = (frontStyle) => buildRack(wasm, { frontStyle, depth: 200, bedX: 600, bedY: 600, gussets: 0 }).parts[0].volume;
   const [o, g, f] = [v('open'), v('grid'), v('full')];

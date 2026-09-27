@@ -144,7 +144,8 @@ function showModel() {
   const explode = document.getElementById('explode').checked;
   for (const part of current.parts) {
     const mat = new THREE.MeshStandardMaterial({ color: part.color, roughness: 0.6, metalness: 0.05 });
-    const mesh = new THREE.Mesh(geometryFrom(part.mesh), mat);
+    const src = explode && part.explodeMesh ? part.explodeMesh : part.mesh;
+    const mesh = new THREE.Mesh(geometryFrom(src), mat);
     if (explode && part.explode) mesh.position.set(...part.explode);
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(mesh.geometry, 30),

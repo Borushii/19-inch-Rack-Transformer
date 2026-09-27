@@ -16,6 +16,7 @@ self.onmessage = async (e) => {
     const transfer = [];
     for (const p of parts) {
       transfer.push(p.mesh.positions.buffer, p.mesh.indices.buffer, p.printMesh.positions.buffer, p.printMesh.indices.buffer);
+      if (p.explodeMesh) transfer.push(p.explodeMesh.positions.buffer, p.explodeMesh.indices.buffer);
     }
     self.postMessage({ id, layout, parts, ms: performance.now() - t0 }, transfer);
   } catch (err) {

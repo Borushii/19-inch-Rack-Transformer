@@ -22,8 +22,10 @@ Application web 100 % statique (aucun serveur) : aperçu 3D en temps réel, calc
 - Rebords latéraux et arrière, renforts triangulaires façade/fond, fentes d’aération.
 - Trous rack ronds ou oblongs, 2 ou 3 par U, en **goutte d’eau** pour imprimer sans support.
 - **Découpage automatique** selon la taille du plateau de l’imprimante (préréglages Bambu, Prusa, Ender, Voron…).
-  Les tronçons s’assemblent par des **clés papillon** (double queue d’aronde) à coller : une mortaise est
-  creusée à cheval sur la coupe dans les deux tronçons, et une clé séparée s’y emboîte au ras de la surface.
+  Les tronçons s’assemblent par des **clés papillon** (double queue d’aronde) à coller : une mortaise
+  borgne est creusée à cheval sur la coupe dans les deux tronçons, uniquement depuis la face cachée
+  (dessous du fond, intérieur de la façade, extérieur des rebords). La clé s’insère par-dessous et une
+  peau de 1 mm (réglable) reste intacte : rien n’est visible sur le dessus.
   Les clés s’impriment à plat (couches dans le sens de l’effort) et sont regroupées par taille
   (une pièce × N exemplaires, placées N fois dans le 3MF). Option : **éclisses** vissées (M3), démontables.
 - Export **3MF** (toutes les pièces, déjà orientées et posées sur le plateau) ou **STL** (par pièce ou en .zip).
