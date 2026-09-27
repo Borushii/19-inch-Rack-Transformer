@@ -1,0 +1,15 @@
+{
+  "name": "19-inch-rack-transformer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Générateur de plateaux 19 pouces imprimables en 3D (STL / 3MF)",
+  "type": "module",
+  "scripts": {
+    "generate": "node cli/generate.mjs",
+    "test": "node --test test/*.test.mjs",
+    "serve": "npx --yes http-server -c-1 -p 8080 ."
+  },
+  "devDependencies": {
+    "manifold-3d": "3.5.4"
+  }
+}
