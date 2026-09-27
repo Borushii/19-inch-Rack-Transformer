@@ -40,7 +40,8 @@ const xmlEscape = (s) =>
 
 /**
  * Fichier 3MF contenant un objet par pièce, disposées côte à côte sur le plateau.
- * @param items Array<{ name, mesh: {positions, indices} }>  maillages déjà orientés pour l'impression
+ * @param items Array<{ name, mesh: {positions, indices}, quantity? }>  maillages déjà orientés pour
+ *   l'impression ; une pièce en plusieurs exemplaires est placée `quantity` fois (même objet).
  */
 export async function to3MF(items, { spacing = 10, bedWidth = 256 } = {}) {
   const fmt = (v) => (Math.round(v * 1e4) / 1e4).toString();
@@ -58,10 +59,15 @@ export async function to3MF(items, { spacing = 10, bedWidth = 256 } = {}) {
       minZ = Math.min(minZ, P[i + 2]);
     }
     const w = maxX - minX, d = maxY - minY;
-    if (cx > 0 && cx + w > Math.max(bedWidth, w)) { cx = 0; cy += rowH + spacing; rowH = 0; }
-    const tx = cx - minX, ty = cy - minY, tz = -minZ;
-    cx += w + spacing;
-    rowH = Math.max(rowH, d);
+    const place = () => {
+      if (cx > 0 && cx + w > Math.max(bedWidth, w)) { cx = 0; cy += rowH + spacing; rowH = 0; }
+      const tx = cx - minX, ty = cy - minY, tz = -minZ;
+      cx += w + spacing;
+      rowH = Math.max(rowH, d);
+      build.push(`<item objectid="${id}" transform="1 0 0 0 1 0 0 0 1 ${fmt(tx)} ${fmt(ty)} ${fmt(tz)}"/>`);
+    };
+    const copies = Math.max(1, Math.round(item.quantity || 1));
+    for (let k = 0; k < copies; k++) place();
 
     const verts = [];
     for (let i = 0; i < P.length; i += 3) verts.push(`<vertex x="${fmt(P[i])}" y="${fmt(P[i + 1])}" z="${fmt(P[i + 2])}"/>`);
@@ -70,7 +76,6 @@ export async function to3MF(items, { spacing = 10, bedWidth = 256 } = {}) {
     objects.push(
       `<object id="${id}" name="${xmlEscape(item.name)}" type="model"><mesh><vertices>${verts.join('')}</vertices><triangles>${tris.join('')}</triangles></mesh></object>`,
     );
-    build.push(`<item objectid="${id}" transform="1 0 0 0 1 0 0 0 1 ${fmt(tx)} ${fmt(ty)} ${fmt(tz)}"/>`);
   });
 
   const model =

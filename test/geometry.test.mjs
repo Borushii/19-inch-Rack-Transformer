@@ -17,7 +17,7 @@ const CASES = {
   'double 1U 180 sans découpe': { mounting: 'double', depth: 180, bedX: 500, bedY: 500 },
   'façade pleine, éclisses vissées': { frontStyle: 'full', joint: 'splice', depth: 300 },
   'façade ajourée 2U, double, éclisses': { frontStyle: 'grid', mounting: 'double', units: 2, depth: 450, joint: 'splice' },
-  'façade ajourée 1U queues d\'aronde': { frontStyle: 'grid', depth: 350 },
+  'façade ajourée 1U clés papillon': { frontStyle: 'grid', depth: 350 },
   'ouverte 4U profonde': { units: 4, depth: 600, mounting: 'double' },
   'avant 3U éclisses dessous, sans rebords': { units: 3, depth: 400, joint: 'splice', frontStyle: 'full', spliceSide: 'bottom', wallHeight: 0, rearLipHeight: 0, holeShape: 'round', holePattern: 'all', teardrop: false },
   'petit plateau 180': { depth: 150, bedX: 180, bedY: 180, gussets: 0, vents: false },
@@ -58,16 +58,29 @@ for (const [label, params] of Object.entries(CASES)) {
   });
 }
 
-test('queues d\'aronde : tenons emboîtés avec jeu, aucune pièce en plus', () => {
+test('clés papillon : mortaises dans les deux tronçons, clés à part', () => {
   const { layout, parts } = buildRack(wasm, { depth: 250, vents: false });
   assert.equal(layout.nx, 2);
-  assert.ok(parts.every((p) => p.kind === 'body'), 'pas d\'éclisse en mode collé');
-  const [a, b] = parts.map((p) => toManifold(p.mesh).boundingBox());
+  const bodies = parts.filter((p) => p.kind === 'body');
+  const keys = parts.filter((p) => p.kind === 'key');
+  assert.equal(bodies.length, 2);
+  assert.ok(keys.length >= 1 && keys.every((k) => k.quantity >= 1));
   const seam = layout.xs[0];
-  // A1 dépasse de la coupe (tenons), A2 commence exactement à la coupe
-  assert.ok(Math.abs(a.max[0] - (seam + layout.params.tabDepth)) < 1e-3);
-  assert.ok(Math.abs(b.min[0] - seam) < 1e-3);
-  // le jeu enlève un peu de matière, mais très peu
+  // les tronçons sont coupés net sur la coupe
+  const [a, b] = bodies.map((p) => toManifold(p.mesh).boundingBox());
+  assert.ok(Math.abs(a.max[0] - seam) < 1e-3 && Math.abs(b.min[0] - seam) < 1e-3);
+  // chaque clé est à cheval sur la coupe, moitié dans chaque tronçon
+  for (const k of keys) {
+    for (const piece of toManifold(k.mesh).decompose()) {
+      const kb = piece.boundingBox();
+      const along = kb.max[0] - kb.min[0] > kb.max[1] - kb.min[1] + 1e-6 ? 0 : 1;
+      if (along === 0) assert.ok(Math.abs((kb.min[0] + kb.max[0]) / 2 - seam) < 1e-3);
+    }
+    // la pièce à imprimer est une seule clé posée à plat
+    const single = toManifold(k.printMesh);
+    assert.ok(Math.abs(single.volume() * k.quantity - k.volume) < 1e-3 * k.volume);
+  }
+  // clés + tronçons ≈ plateau d'un seul tenant (le jeu enlève très peu)
   const full = buildRack(wasm, { depth: 250, vents: false, bedX: 600, bedY: 600 }).parts[0].volume;
   const sum = parts.reduce((s, p) => s + p.volume, 0);
   assert.ok(sum < full && full - sum < 0.01 * full, `${full} vs ${sum}`);
@@ -115,7 +128,7 @@ test('STL binaire et 3MF valides', async () => {
   assert.equal(n, parts[0].printMesh.indices.length / 3);
   assert.equal(stl.length, 84 + 50 * n);
 
-  const z = await to3MF(parts.map((p) => ({ name: p.name, mesh: p.printMesh })));
+  const z = await to3MF(parts.map((p) => ({ name: p.name, mesh: p.printMesh, quantity: p.quantity })));
   const zv = new DataView(z.buffer);
   // lecture du répertoire central
   const eocd = z.length - 22;
@@ -142,6 +155,6 @@ test('STL binaire et 3MF valides', async () => {
   assert.ok(files['[Content_Types].xml'] && files['_rels/.rels']);
   const model = files['3D/3dmodel.model'];
   assert.equal((model.match(/<object /g) || []).length, parts.length);
-  assert.equal((model.match(/<item /g) || []).length, parts.length);
+  assert.equal((model.match(/<item /g) || []).length, parts.reduce((n, p) => n + p.quantity, 0));
   assert.match(model, /unit="millimeter"/);
 });

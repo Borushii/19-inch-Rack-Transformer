@@ -34,10 +34,11 @@ await mkdir(outDir, { recursive: true });
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
 const base = `plateau-19p-${layout.params.units}U-${layout.D}mm${layout.params.mounting === 'double' ? '-double' : ''}`;
 for (const part of parts) {
-  await writeFile(join(outDir, `${base}-${slug(part.name)}.stl`), toSTL(part.printMesh, part.name));
+  const qty = part.quantity > 1 ? `-x${part.quantity}` : '';
+  await writeFile(join(outDir, `${base}-${slug(part.name)}${qty}.stl`), toSTL(part.printMesh, part.name));
 }
-await writeFile(join(outDir, `${base}.3mf`), await to3MF(parts.map((p) => ({ name: p.name, mesh: p.printMesh })), { bedWidth: layout.params.bedX }));
+await writeFile(join(outDir, `${base}.3mf`), await to3MF(parts.map((p) => ({ name: p.name, mesh: p.printMesh, quantity: p.quantity })), { bedWidth: layout.params.bedX }));
 for (const w of layout.warnings) console.warn('⚠', w);
 console.log(`${parts.length} pièce(s) → ${outDir}/`);
-for (const p of parts) console.log(`  - ${p.name} : ${p.size.map((v) => v.toFixed(1)).join(' × ')} mm`);
+for (const p of parts) console.log(`  - ${p.name}${p.quantity > 1 ? ` (× ${p.quantity})` : ''} : ${p.size.map((v) => v.toFixed(1)).join(' × ')} mm`);
 if (layout.bracket?.range) console.log(`Écartement des montants compatible : ${layout.bracket.range.min.toFixed(0)} – ${layout.bracket.range.max.toFixed(0)} mm`);

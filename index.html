@@ -133,13 +133,14 @@
         </div>
         <label>Jonction des tronçons
           <select name="joint">
-            <option value="dovetail" selected>Queues d’aronde collées (invisible)</option>
+            <option value="key" selected>Clés papillon à coller (solide)</option>
             <option value="splice">Éclisses vissées (démontable)</option>
           </select>
         </label>
-        <div class="grid2 only-dovetail">
+        <div class="grid2 only-key">
           <label>Jeu d’emboîtement (mm) <input type="number" name="jointGap" value="0.15" min="0" max="0.6" step="0.05" /></label>
-          <label>Taille des tenons <input type="number" name="tabWidth" value="12" min="6" max="30" /></label>
+          <label>Largeur des clés <input type="number" name="tabWidth" value="14" min="6" max="30" /></label>
+          <label>Longueur des clés (par côté) <input type="number" name="tabDepth" value="10" min="4" max="20" /></label>
         </div>
         <div class="grid2 only-splice">
           <label>Éclisses du fond
@@ -175,7 +176,7 @@
       <details>
         <summary>Assemblage</summary>
         <ul class="help">
-          <li><b>Queues d’aronde</b> : emboîtez les tronçons (tenons dans les mortaises) avec de la colle cyanoacrylate ou époxy ; la jonction est invisible une fois collée. Si c’est trop serré, augmentez le jeu (0,2–0,25 mm).</li>
+          <li><b>Clés papillon</b> : placez les tronçons bord à bord, puis enfoncez les clés (double queue d’aronde) dans les mortaises à cheval sur la coupe, avec de la colle cyanoacrylate ou époxy. Les clés arrivent au ras de la surface. Imprimées à plat, leurs couches travaillent dans le sens de l’effort. Si c’est trop serré, augmentez le jeu (0,2–0,25 mm).</li>
           <li><b>Éclisses</b> (option) : plaques vissées M3 + écrous, démontables.</li>
           <li>Façade : se visse sur les montants avant avec des vis M6 + écrous cage.</li>
           <li>En double fixation, les équerres se glissent par l’arrière, patte contre la face arrière des montants arrière, puis se vissent dans les trous des rebords.</li>
