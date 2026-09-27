@@ -115,6 +115,24 @@ test('clés papillon cachées : insérées par-dessous, face du dessus intacte',
   }
 });
 
+test('clés papillon : ergots de clipsage logés dans des gorges', () => {
+  const opts = { depth: 250, vents: false };
+  const withSnap = buildRack(wasm, { ...opts, keySnap: true });
+  const noSnap = buildRack(wasm, { ...opts, keySnap: false });
+  const key = (r) => r.parts.find((p) => p.kind === 'key' && p.name.includes('3 mm'));
+  const [ks, kn] = [key(withSnap), key(noSnap)];
+  const e = withSnap.layout.params.snapHeight;
+  // la clé à ergots dépasse de la saillie à chaque bout
+  const len = (k) => Math.max(...k.size.slice(0, 2));
+  assert.ok(Math.abs(len(ks) - len(kn) - 2 * e) < 1e-3, `${len(ks)} vs ${len(kn)}`);
+  // sans gorge, l'ergot serait en conflit avec la paroi de la mortaise (clipsage en force)
+  const bodyNoGroove = Manifold.union(noSnap.parts.filter((p) => p.kind === 'body').map((p) => toManifold(p.mesh)));
+  assert.ok(bodyNoGroove.intersect(toManifold(ks.mesh)).volume() > 0.01);
+  // avec gorge, aucune collision une fois clipsée
+  const body = Manifold.union(withSnap.parts.filter((p) => p.kind === 'body').map((p) => toManifold(p.mesh)));
+  assert.ok(body.intersect(toManifold(ks.mesh)).volume() < 1e-3);
+});
+
 test('façade : ouverte < ajourée < pleine (matière)', () => {
   const v = (frontStyle) => buildRack(wasm, { frontStyle, depth: 200, bedX: 600, bedY: 600, gussets: 0 }).parts[0].volume;
   const [o, g, f] = [v('open'), v('grid'), v('full')];

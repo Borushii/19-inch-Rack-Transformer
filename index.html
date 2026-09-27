@@ -142,7 +142,9 @@
           <label>Largeur des clés <input type="number" name="tabWidth" value="14" min="6" max="30" /></label>
           <label>Longueur des clés (par côté) <input type="number" name="tabDepth" value="10" min="4" max="20" /></label>
           <label>Peau visible au-dessus (mm) <input type="number" name="keySkin" value="1" min="0.4" max="5" step="0.1" /></label>
+          <label>Saillie des ergots (mm) <input type="number" name="snapHeight" value="0.35" min="0.1" max="1" step="0.05" /></label>
         </div>
+        <label class="check only-key-block"><input type="checkbox" name="keySnap" checked /> Ergots de clipsage sur les clés</label>
         <div class="grid2 only-splice">
           <label>Éclisses du fond
             <select name="spliceSide"><option value="top" selected>Dessus</option><option value="bottom">Dessous</option></select>
@@ -177,7 +179,7 @@
       <details>
         <summary>Assemblage</summary>
         <ul class="help">
-          <li><b>Clés papillon</b> : placez les tronçons bord à bord, retournez le plateau et enfoncez les clés (double queue d’aronde) dans les mortaises à cheval sur la coupe, avec de la colle cyanoacrylate ou époxy. Les mortaises ne traversent pas : elles s’ouvrent seulement sur la face cachée (dessous du fond, intérieur de la façade, extérieur des rebords), le dessus reste lisse. Imprimées à plat, les clés travaillent dans le sens de l’effort. Si c’est trop serré, augmentez le jeu (0,2–0,25 mm).</li>
+          <li><b>Clés papillon</b> : placez les tronçons bord à bord, retournez le plateau et enfoncez les clés (double queue d’aronde) dans les mortaises à cheval sur la coupe, avec de la colle cyanoacrylate ou époxy. Les mortaises ne traversent pas : elles s’ouvrent seulement sur la face cachée (dessous du fond, intérieur de la façade, extérieur des rebords), le dessus reste lisse. Un ergot à chaque bout de la clé passe en force puis se clipse dans une gorge : la clé tient seule, la colle rend l’assemblage définitif. Imprimées à plat, les clés travaillent dans le sens de l’effort. Si c’est trop serré, augmentez le jeu (0,2–0,25 mm).</li>
           <li><b>Éclisses</b> (option) : plaques vissées M3 + écrous, démontables.</li>
           <li>Façade : se visse sur les montants avant avec des vis M6 + écrous cage.</li>
           <li>En double fixation, les équerres se glissent par l’arrière, patte contre la face arrière des montants arrière, puis se vissent dans les trous des rebords.</li>

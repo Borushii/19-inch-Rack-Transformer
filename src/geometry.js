@@ -63,6 +63,8 @@ export const DEFAULTS = {
   tabPitch: 45, // clé papillon : espacement maxi
   jointGap: 0.15, // jeu d'emboîtement (par face)
   keySkin: 1, // épaisseur laissée intacte sur la face visible, au-dessus des clés
+  keySnap: true, // ergots de clipsage sur les clés (+ gorges dans les mortaises)
+  snapHeight: 0.35, // saillie des ergots (serrage au passage = saillie - jeu)
   spliceSide: 'top', // éclisses du fond : 'top' (dessus) | 'bottom' (dessous)
   spliceWidth: 40,
   spliceThickness: 3,
@@ -118,6 +120,8 @@ export function normalizeParams(input = {}) {
   p.tabPitch = clamp(p.tabPitch, 20, 200);
   p.jointGap = clamp(p.jointGap, 0, 0.6);
   p.keySkin = clamp(p.keySkin, 0.4, 5);
+  p.keySnap = p.keySnap === true || p.keySnap === 'true' || p.keySnap === 'on';
+  p.snapHeight = clamp(p.snapHeight, 0.1, 1);
   p.vents = p.vents === true || p.vents === 'true';
   p.teardrop = p.teardrop === true || p.teardrop === 'true';
   for (const k of ['splitX', 'splitY']) {
@@ -587,12 +591,42 @@ export function buildRack(wasm, input) {
           const cs = t(new CrossSection([pts]));
           const axisName = ['x', 'y', 'z'][n];
           const off = p.jointGap > 0 ? t(cs.offset(p.jointGap, 'Miter')) : cs;
-          sockets.push(prism(axisName, off, ks < 0 ? k0 - 0.01 : k0, ks < 0 ? k1 : k1 + 0.01));
+          let socket = prism(axisName, off, ks < 0 ? k0 - 0.01 : k0, ks < 0 ? k1 : k1 + 0.01);
+          let key = prism(axisName, cs, k0, k1);
+
+          // Ergots de clipsage : une nervure triangulaire sur chaque bout de la clé
+          // passe en force (saillie - jeu) puis se loge dans une gorge de la mortaise.
+          const snap = p.keySnap && depth >= 2;
+          if (snap) {
+            const e = p.snapHeight;
+            const nc = ks < 0 ? k0 + 0.6 * depth : k1 - 0.6 * depth;
+            const sh = Math.min(0.25 * depth, 1);
+            const wr = wh * 0.5;
+            // prisme triangulaire (profil dans le plan a/n, extrudé selon t)
+            const ridge = (end, protrude, half, widen) => {
+              const [pu, pv] = [a, n].sort((x, y) => x - y);
+              const q = (da, dn) => {
+                const v = [0, 0, 0];
+                v[a] = c + end * (h + da);
+                v[n] = nc + dn;
+                return [v[pu], v[pv]];
+              };
+              const tri = [q(-0.2, -half), q(protrude, 0), q(-0.2, half)];
+              let ar = 0;
+              for (let k = 0; k < 3; k++) ar += tri[k][0] * tri[(k + 1) % 3][1] - tri[(k + 1) % 3][0] * tri[k][1];
+              if (ar < 0) tri.reverse();
+              return prism(['x', 'y', 'z'][tAx], t(new CrossSection([tri])), tc - wr / 2 - widen, tc + wr / 2 + widen);
+            };
+            key = t(Manifold.union([key, ridge(-1, e, sh, 0), ridge(+1, e, sh, 0)]));
+            const gw = p.jointGap + 0.1;
+            socket = t(Manifold.union([socket, ridge(-1, e + gw, sh + gw, 0.3), ridge(+1, e + gw, sh + gw, 0.3)]));
+          }
+          sockets.push(socket);
           // les clés identiques sont regroupées (une seule pièce à imprimer N fois)
-          const id = `${depth.toFixed(2)}|${wh.toFixed(2)}`;
+          const id = `${depth.toFixed(2)}|${wh.toFixed(2)}|${snap}`;
           if (!keyGroups.has(id)) keyGroups.set(id, { thick: depth, wh, n, solids: [], moves: [] });
           const g = keyGroups.get(id);
-          g.solids.push(prism(axisName, cs, k0, k1));
+          g.solids.push(key);
           const mv = [0, 0, 0];
           mv[n] = ks * 25; // vue éclatée : la clé sort par sa face d'insertion
           g.moves.push(mv);

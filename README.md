@@ -25,7 +25,8 @@ Application web 100 % statique (aucun serveur) : aperçu 3D en temps réel, calc
   Les tronçons s’assemblent par des **clés papillon** (double queue d’aronde) à coller : une mortaise
   borgne est creusée à cheval sur la coupe dans les deux tronçons, uniquement depuis la face cachée
   (dessous du fond, intérieur de la façade, extérieur des rebords). La clé s’insère par-dessous et une
-  peau de 1 mm (réglable) reste intacte : rien n’est visible sur le dessus.
+  peau de 1 mm (réglable) reste intacte : rien n’est visible sur le dessus. Un **ergot** à chaque bout de
+  la clé se clipse dans une gorge de la mortaise : la clé tient seule avant collage.
   Les clés s’impriment à plat (couches dans le sens de l’effort) et sont regroupées par taille
   (une pièce × N exemplaires, placées N fois dans le 3MF). Option : **éclisses** vissées (M3), démontables.
 - Export **3MF** (toutes les pièces, déjà orientées et posées sur le plateau) ou **STL** (par pièce ou en .zip).
