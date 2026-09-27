@@ -14,11 +14,16 @@ Application web 100 % statique (aucun serveur) : aperçu 3D en temps réel, calc
     dans une rangée de trous des rebords latéraux ; leurs lumières oblongues permettent un réglage continu.
     L’application affiche l’**écartement de montants compatible** (face avant des montants avant →
     face arrière des montants arrière).
+- **Façade** au choix :
+  - **ouverte** (par défaut) : pattes de fixation + petit rebord bas, reliées au fond par des joues latérales
+    en pente — tout le contenu du plateau reste visible ;
+  - **ajourée** : losanges à 45° (imprimables sans support) ;
+  - **pleine**.
 - Rebords latéraux et arrière, renforts triangulaires façade/fond, fentes d’aération.
 - Trous rack ronds ou oblongs, 2 ou 3 par U, en **goutte d’eau** pour imprimer sans support.
-- **Découpage automatique** selon la taille du plateau de l’imprimante (préréglages Bambu, Prusa, Ender, Voron…) :
-  les tronçons sont assemblés par des **éclisses** vissées (M3) générées automatiquement
-  (fond, façade, rebords), dessus ou dessous.
+- **Découpage automatique** selon la taille du plateau de l’imprimante (préréglages Bambu, Prusa, Ender, Voron…).
+  Les tronçons s’assemblent par des **queues d’aronde** (tenons/mortaises type puzzle, jeu réglable) à coller :
+  jonction invisible, aucune pièce en plus. Option : **éclisses** vissées (M3), démontables.
 - Export **3MF** (toutes les pièces, déjà orientées et posées sur le plateau) ou **STL** (par pièce ou en .zip).
 - Réglages mémorisés dans le navigateur ; ils peuvent aussi être passés dans l’URL, ex.
   `index.html#mounting=double&depth=450&units=2`.
@@ -68,5 +73,6 @@ passe entre les montants (450 mm) et que les fichiers STL / 3MF sont valides.
 ## Conseils d’impression
 
 PETG ou ASA de préférence (le PLA flue sous charge dans une baie chaude), 4 périmètres, 25–40 % de
-remplissage. Collez les éclisses en plus des vis pour un plateau bien rigide. Visserie : M6 + écrous cage
-pour la baie, M3 pour les éclisses, M4 pour les équerres arrière (diamètres modifiables).
+remplissage. Collez les queues d’aronde à la cyanoacrylate ou à l’époxy ; si l’emboîtement est trop serré,
+augmentez le jeu (0,2–0,25 mm). Visserie : M6 + écrous cage pour la baie, M4 pour les équerres arrière,
+M3 pour les éclisses éventuelles (diamètres modifiables).

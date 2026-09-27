@@ -13,7 +13,7 @@ const dl3mf = document.getElementById('dl3mf');
 const dlstl = document.getElementById('dlstl');
 
 const BED_PRESETS = { 180: [180, 180], 220: [220, 220], 250: [250, 210], 256: [256, 256], 300: [300, 300], 350: [350, 350], 500: [500, 500] };
-const STORAGE_KEY = 'rack19-params-v1';
+const STORAGE_KEY = 'rack19-params-v2';
 
 // ---------------------------------------------------------------------------
 // Paramètres du formulaire
@@ -52,6 +52,9 @@ function syncMirrors(source) {
 function updateFormState(p) {
   form.classList.toggle('double', p.mounting === 'double');
   form.classList.toggle('custom-bed', p.bedPreset === 'custom');
+  for (const st of ['open', 'grid', 'full']) form.classList.toggle(`front-${st}`, p.frontStyle === st);
+  form.classList.toggle('joint-dovetail', p.joint !== 'splice');
+  form.classList.toggle('joint-splice', p.joint === 'splice');
 }
 
 try {

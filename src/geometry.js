@@ -20,6 +20,10 @@ export const DEFAULTS = {
   depth: 250,
   mounting: 'front', // 'front' = fixation avant seule, 'double' = avant + arrière
 
+  frontStyle: 'open', // 'open' (ouverte), 'grid' (ajourée en losanges), 'full' (pleine)
+  frontLipHeight: 12, // façade ouverte : hauteur du rebord avant (0 = aucun)
+  gridSize: 18, // façade ajourée : diagonale des losanges
+  gridRib: 4, // façade ajourée : largeur des nervures
   frontThickness: 4,
   baseThickness: 3,
   bodyClearance: 1, // jeu entre le plateau et les montants (par côté)
@@ -53,6 +57,11 @@ export const DEFAULTS = {
   bedY: 256,
   splitX: 'auto', // 'auto' ou nombre de tronçons en largeur
   splitY: 'auto', // 'auto' ou nombre de tronçons en profondeur
+  joint: 'dovetail', // 'dovetail' (queues d'aronde collées, invisibles) | 'splice' (éclisses vissées)
+  tabWidth: 12, // queue d'aronde : largeur en tête
+  tabDepth: 8, // queue d'aronde : longueur
+  tabPitch: 45, // queue d'aronde : espacement maxi
+  jointGap: 0.15, // jeu d'emboîtement (par face)
   spliceSide: 'top', // éclisses du fond : 'top' (dessus) | 'bottom' (dessous)
   spliceWidth: 40,
   spliceThickness: 3,
@@ -97,6 +106,15 @@ export function normalizeParams(input = {}) {
   p.bedY = clamp(p.bedY, 100, 1000);
   p.segments = Math.round(clamp(p.segments, 12, 96));
   p.mounting = p.mounting === 'double' ? 'double' : 'front';
+  p.frontStyle = ['open', 'grid', 'full'].includes(p.frontStyle) ? p.frontStyle : 'open';
+  p.joint = p.joint === 'splice' ? 'splice' : 'dovetail';
+  p.frontLipHeight = clamp(p.frontLipHeight, 0, 200);
+  p.gridSize = clamp(p.gridSize, 6, 60);
+  p.gridRib = clamp(p.gridRib, 2, 15);
+  p.tabWidth = clamp(p.tabWidth, 6, 30);
+  p.tabDepth = clamp(p.tabDepth, 4, 20);
+  p.tabPitch = clamp(p.tabPitch, 20, 200);
+  p.jointGap = clamp(p.jointGap, 0, 0.6);
   p.vents = p.vents === true || p.vents === 'true';
   p.teardrop = p.teardrop === true || p.teardrop === 'true';
   for (const k of ['splitX', 'splitY']) {
@@ -141,22 +159,42 @@ export function computeLayout(input) {
   const top = p.spliceSide !== 'bottom';
   const st = p.spliceThickness;
   const sw = p.spliceWidth;
+  const dovetail = p.joint === 'dovetail';
+  // Demi-largeur de la zone à garder pleine de part et d'autre d'une coupe
+  const seamKeep = dovetail ? p.tabDepth + p.jointGap + 3 : sw / 2;
+
+  // Façade ouverte : rebord avant + joues latérales qui relient les pattes au plateau
+  const open = p.frontStyle === 'open';
+  const lipF = open && p.frontLipHeight > 0 ? clamp(p.frontLipHeight, tb + 2, H) : 0;
+  let cheek = null;
+  if (open) {
+    const y1 = tf + 6;
+    const lowZ = Math.max(hs, tb);
+    const maxY = Math.max(y1 + 1, D - tl - 2);
+    let y2 = y1 + 1.2 * (H - lowZ);
+    let z2 = lowZ;
+    if (y2 > maxY) {
+      z2 = H - (maxY - y1) / 1.2;
+      y2 = maxY;
+    }
+    cheek = { y1, y2, z2, t: p.wallThickness };
+  }
 
   // Renforts
   let gussetLen = 0;
   let gussetHeight = 0;
   const gussetX = [];
-  if (p.gussets > 0) {
+  if (p.gussets > 0 && !open) {
     gussetHeight = Math.max(0, H - tb - 3);
     let maxLen = D - tf - tl - 5;
-    if (ys.length) maxLen = Math.min(maxLen, ys[0] - sw / 2 - tf - 3);
+    if (ys.length) maxLen = Math.min(maxLen, ys[0] - seamKeep - tf - 3);
     gussetLen = Math.min(gussetHeight, maxLen);
     if (gussetLen < 5 || gussetHeight < 5) {
       gussetLen = 0;
     } else {
       const lo = xb0 + tw + p.gussetThickness;
       const hi = xb1 - tw - p.gussetThickness;
-      const keepOut = sw / 2 + p.gussetThickness / 2 + 2;
+      const keepOut = seamKeep + p.gussetThickness / 2 + 2;
       for (let i = 1; i <= p.gussets; i++) {
         let x = xb0 + (i * (xb1 - xb0)) / (p.gussets + 1);
         for (const s of xs) {
@@ -179,7 +217,7 @@ export function computeLayout(input) {
     const yMin = Math.max(D - p.adjustRange, tf + gussetLen + 8);
     const holesY = [];
     for (let y = D - 8; y >= yMin - 1e-6; y -= P) {
-      if (ys.some((s) => Math.abs(y - s) < sw / 2 + bd)) continue;
+      if (ys.some((s) => Math.abs(y - s) < seamKeep + bd)) continue;
       holesY.push(y);
     }
     const c1 = -(8 + P / 2); // centre de la 1re lumière (relatif à la face avant de la patte)
@@ -201,7 +239,7 @@ export function computeLayout(input) {
 
   return {
     params: p, warnings, W, H, D, tf, tb, hs, tw, hl, tl, bodyWidth, xb0, xb1,
-    nx, ny, xs, ys, top, st, sw, gussetLen, gussetHeight, gussetX, bracket,
+    nx, ny, xs, ys, top, st, sw, seamKeep, dovetail, open, lipF, cheek, gussetLen, gussetHeight, gussetX, bracket,
     earHoleX: (W - RACK.holeSpacing) / 2,
     rackHolesZ: rackHoleHeights(p),
   };
@@ -217,8 +255,9 @@ function rackHoleHeights(p) {
 function chooseSplit(p, W, D, H) {
   const fit = (a, b) => (a <= p.bedX && b <= p.bedY) || (b <= p.bedX && a <= p.bedY);
   // Un tronçon contient la façade (H) + le fond : son encombrement au sol est (W/nx) x (D/ny)
-  const margin = p.spliceThickness + 2;
-  const test = (nx, ny) => fit(W / nx + margin, D / ny + margin);
+  // les tenons des queues d'aronde dépassent de la coupe ; 1 mm de marge de sécurité
+  const tab = p.joint === 'splice' ? 0 : p.tabDepth + p.jointGap;
+  const test = (nx, ny) => fit(W / nx + (nx > 1 ? tab : 0) + 1, D / ny + (ny > 1 ? tab : 0) + 1);
   const fixedX = p.splitX !== 'auto' ? p.splitX : null;
   const fixedY = p.splitY !== 'auto' ? p.splitY : null;
   let best = null;
@@ -289,15 +328,65 @@ export function buildRack(wasm, input) {
     };
     const at = (cs, u, v) => t(cs.translate([u, v]));
 
-    const { W, H, D, tf, tb, hs, tw, hl, tl, xb0, xb1, xs, ys, top, st, sw } = L;
+    const { W, H, D, tf, tb, hs, tw, hl, tl, xb0, xb1, xs, ys, top, st, sw, seamKeep, dovetail } = L;
     const plates = [];
     const solids = [];
     const cutters = [];
+    // plage (selon la hauteur) disponible pour une jonction sur une paroi verticale
+    const zRange = (hi) => [[tb + (dovetail ? 0 : top ? st : 0) + 1, hi - 1]];
+    const nearSeam = (v, seams, extra = 0) => seams.some((s) => Math.abs(v - s) < seamKeep + extra);
 
     // --- façade -----------------------------------------------------------
-    solids.push(box(0, 0, 0, W, tf, H));
-    plates.push({ name: 'façade', min: [0, 0, 0], max: [W, tf, H], n: 1, side: +1, seams: 'x',
-      t: [[tb + (top ? st : 0) + 1, H - 1]] });
+    if (L.open) {
+      const C = L.cheek;
+      // pattes de fixation, prolongées jusqu'aux joues
+      solids.push(box(0, 0, 0, xb0 + C.t, tf, H));
+      solids.push(box(xb1 - C.t, 0, 0, W, tf, H));
+      if (L.lipF > 0) {
+        solids.push(box(xb0, 0, 0, xb1, tf, L.lipF));
+        plates.push({ name: 'rebord avant', min: [xb0, 0, 0], max: [xb1, tf, L.lipF], n: 1, side: +1, seams: 'x', t: zRange(L.lipF) });
+      }
+      // joues : pleine hauteur à l'avant, puis descendent en pente jusqu'aux rebords
+      const prof = t(new CrossSection([[[0, 0], [C.y2, 0], [C.y2, C.z2], [C.y1, H], [0, H]]]));
+      solids.push(prism('x', prof, xb0, xb0 + C.t));
+      solids.push(prism('x', prof, xb1 - C.t, xb1));
+    } else {
+      solids.push(box(0, 0, 0, W, tf, H));
+      plates.push({ name: 'façade', min: [0, 0, 0], max: [W, tf, H], n: 1, side: +1, seams: 'x', t: zRange(H) });
+      if (p.frontStyle === 'grid') {
+        // losanges à 45° : s'impriment sans support
+        const s = p.gridSize;
+        const a = s / Math.SQRT2;
+        const pitch = s + p.gridRib * Math.SQRT2;
+        const m = Math.max(4, p.gridRib);
+        const x0 = xb0 + tw + m, x1 = xb1 - tw - m;
+        const z0 = tb + m, z1 = H - m;
+        if (x1 - x0 > 10 && z1 - z0 > 6) {
+          const dia = t(t(CrossSection.square([a, a], true)).rotate(45));
+          const shapes = [];
+          const zc = (z0 + z1) / 2;
+          const xc = (x0 + x1) / 2;
+          const nzr = Math.ceil((z1 - z0) / pitch) + 1;
+          const nxr = Math.ceil((x1 - x0) / pitch) + 1;
+          for (let j = -nzr; j <= nzr; j++) {
+            for (let i = -nxr; i <= nxr; i++) {
+              const u = xc + i * pitch + (Math.abs(j) % 2 ? pitch / 2 : 0);
+              const v = zc + (j * pitch) / 2;
+              if (u < x0 - s || u > x1 + s || v < z0 - s || v > z1 + s) continue;
+              shapes.push(at(dia, u, v));
+            }
+          }
+          let win = t(CrossSection.union(shapes));
+          win = t(win.intersect(t(t(CrossSection.square([x1 - x0, z1 - z0])).translate([x0, z0]))));
+          // nervures pleines au droit des renforts et des coupes
+          const keep = [];
+          for (const g of L.gussetX) keep.push(t(t(CrossSection.square([p.gussetThickness + 2 * m, H])).translate([g - p.gussetThickness / 2 - m, 0])));
+          for (const c of xs) keep.push(t(t(CrossSection.square([2 * seamKeep, H])).translate([c - seamKeep, 0])));
+          if (keep.length) win = t(win.subtract(t(CrossSection.union(keep))));
+          if (!win.isEmpty()) cutters.push(prism('y', win, -1, tf + 1));
+        }
+      }
+    }
 
     // trous de fixation rack (façade)
     const rackHole = () => {
@@ -314,14 +403,14 @@ export function buildRack(wasm, input) {
 
     // --- fond -------------------------------------------------------------
     solids.push(box(xb0, 0, 0, xb1, D, tb));
-    const xSeamBaseT = top ? [tf + st + 1, D - tl - 1] : [tf + 1, D - 1];
-    const ySeamBaseT = top && tw ? [xb0 + tw + 1, xb1 - tw - 1] : [xb0 + 1, xb1 - 1];
+    const xSeamBaseT = dovetail ? [tf + 1, D - tl - 1] : top ? [tf + st + 1, D - tl - 1] : [tf + 1, D - 1];
+    const ySeamBaseT = dovetail || (top && tw) ? [xb0 + tw + 1, xb1 - tw - 1] : [xb0 + 1, xb1 - 1];
     plates.push({ name: 'fond', min: [xb0, 0, 0], max: [xb1, D, tb], n: 2, side: top ? +1 : -1,
       seams: 'xy', tForX: [xSeamBaseT], tForY: [ySeamBaseT] });
 
     // --- rebords latéraux -------------------------------------------------
     if (hs > 0) {
-      const tz = [[tb + (top ? st : 0) + 1, hs - 1]];
+      const tz = zRange(hs);
       solids.push(box(xb0, 0, 0, xb0 + tw, D, hs));
       solids.push(box(xb1 - tw, 0, 0, xb1, D, hs));
       plates.push({ name: 'rebord gauche', min: [xb0, 0, 0], max: [xb0 + tw, D, hs], n: 0, side: +1, seams: 'y', t: tz });
@@ -332,7 +421,7 @@ export function buildRack(wasm, input) {
     if (hl > 0) {
       solids.push(box(xb0, D - tl, 0, xb1, D, hl));
       plates.push({ name: 'rebord arrière', min: [xb0, D - tl, 0], max: [xb1, D, hl], n: 1, side: -1, seams: 'x',
-        t: [[tb + (top ? st : 0) + 1, hl - 1]] });
+        t: zRange(hl) });
     }
 
     // --- renforts ---------------------------------------------------------
@@ -349,7 +438,7 @@ export function buildRack(wasm, input) {
       const vl = p.ventLength;
       const x0 = xb0 + tw + 8;
       const x1 = xb1 - tw - 8;
-      const y0 = tf + (L.gussetLen > 0 ? L.gussetLen : 0) + 10;
+      const y0 = tf + (L.gussetLen > 0 ? L.gussetLen : 0) + (L.open ? 14 : 10);
       const y1 = D - tl - 10;
       const pitchX = vw * 2.2;
       const pitchY = vl + 10;
@@ -361,10 +450,10 @@ export function buildRack(wasm, input) {
         const shape = t(slotShape(vw / 2, vl, false).rotate(90));
         for (let i = 0; i < nxV; i++) {
           const cx = x0 + offX + vw / 2 + i * pitchX;
-          if (xs.some((s) => Math.abs(cx - s) < sw / 2 + vw)) continue;
+          if (nearSeam(cx, xs, vw)) continue;
           for (let j = 0; j < nyV; j++) {
             const cy = y0 + offY + vl / 2 + j * pitchY;
-            if (ys.some((s) => Math.abs(cy - s) < sw / 2 + vl / 2 + 3)) continue;
+            if (nearSeam(cy, ys, vl / 2 + 3)) continue;
             cutters.push(prism('z', at(shape, cx, cy), -1, tb + 1));
           }
         }
@@ -448,23 +537,68 @@ export function buildRack(wasm, input) {
       }
       return out;
     };
-    const xCuts = xs.map((s) => [s - sw / 2 - 1, s + sw / 2 + 1]);
-    const yCuts = ys.map((s) => [s - sw / 2 - 1, s + sw / 2 + 1]);
+    // --- queues d'aronde (jonctions invisibles, à coller) -----------------
+    // Chaque coupe reçoit des tenons côté « bas » (x ou y plus petit) qui
+    // s'emboîtent dans des mortaises (tenon + jeu) côté « haut ».
+    const TX = xs.map(() => ({ tab: [], sock: [] }));
+    const TY = ys.map(() => ({ tab: [], sock: [] }));
+    const addTabs = (plate, seamAxis, c, tRanges, store) => {
+      const a = AX[seamAxis];
+      const n = plate.n;
+      const tAx = [0, 1, 2].find((k) => k !== a && k !== n);
+      const [uIdx, vIdx] = [0, 1, 2].filter((k) => k !== n);
+      const h = p.tabDepth;
+      for (const [t0, t1] of tRanges) {
+        const len = t1 - t0;
+        const wh = Math.min(p.tabWidth, len - 2);
+        if (wh < 4) continue;
+        const wn = wh * 0.65;
+        const m = wh / 2 + 1;
+        const count = Math.max(1, Math.floor((len - 2 * m) / p.tabPitch) + 1);
+        for (let i = 0; i < count; i++) {
+          const tc = count === 1 ? (t0 + t1) / 2 : t0 + m + (i * (len - 2 * m)) / (count - 1);
+          const pts = [[0, -wn / 2], [h, -wh / 2], [h, wh / 2], [0, wn / 2]].map(([da, dt]) => {
+            const q = [0, 0, 0];
+            q[a] = c + da;
+            q[tAx] = tc + dt;
+            return [q[uIdx], q[vIdx]];
+          });
+          let area = 0;
+          for (let k = 0; k < pts.length; k++) {
+            const [x1, y1] = pts[k];
+            const [x2, y2] = pts[(k + 1) % pts.length];
+            area += x1 * y2 - x2 * y1;
+          }
+          if (area < 0) pts.reverse();
+          const cs = t(new CrossSection([pts]));
+          const axisName = ['x', 'y', 'z'][n];
+          store.tab.push(prism(axisName, cs, plate.min[n], plate.max[n]));
+          const off = p.jointGap > 0 ? t(cs.offset(p.jointGap, 'Miter')) : cs;
+          store.sock.push(prism(axisName, off, plate.min[n] - 0.01, plate.max[n] + 0.01));
+        }
+      }
+    };
+
+    const h = p.tabDepth + p.jointGap;
+    const xCuts = xs.map((s) => (dovetail ? [s - 2, s + h + 2] : [s - sw / 2 - 1, s + sw / 2 + 1]));
+    const yCuts = ys.map((s) => (dovetail ? [s - 2, s + h + 2] : [s - sw / 2 - 1, s + sw / 2 + 1]));
     for (const plate of plates) {
       if (plate.seams.includes('x')) {
-        for (const s of xs) {
+        xs.forEach((s, k) => {
           const tr = plate.tForX ? subtractIntervals(plate.tForX, yCuts) : plate.t;
-          addSplices(plate, 'x', s, tr);
-        }
+          if (dovetail) addTabs(plate, 'x', s, tr, TX[k]);
+          else addSplices(plate, 'x', s, tr);
+        });
       }
       if (plate.seams.includes('y')) {
-        for (const s of ys) {
+        ys.forEach((s, k) => {
           const tr = plate.tForY ? subtractIntervals(plate.tForY, xCuts) : plate.t;
-          addSplices(plate, 'y', s, tr);
-        }
+          if (dovetail) addTabs(plate, 'y', s, tr, TY[k]);
+          else addSplices(plate, 'y', s, tr);
+        });
       }
     }
-    if ((xs.length || ys.length) && hs > 0 && hs - tb - (top ? st : 0) < 2 * sr + 6 && ys.length) {
+    if (!dovetail && ys.length && hs > 0 && hs - tb - (top ? st : 0) < 2 * sr + 6) {
       L.warnings.push('Rebords trop bas pour recevoir des éclisses : ils seront seulement collés.');
     }
 
@@ -480,7 +614,22 @@ export function buildRack(wasm, input) {
     for (let j = 0; j < by.length - 1; j++) {
       for (let i = 0; i < bx.length - 1; i++) {
         // cellule (i, j) : tronçon i en largeur, j en profondeur
-        const cell = box(bx[i], by[j], -1e3, bx[i + 1], by[j + 1], 1e3);
+        let cell = box(bx[i], by[j], -1e3, bx[i + 1], by[j + 1], 1e3);
+        if (dovetail) {
+          const slabY = box(-1e4, by[j], -1e3, 1e4, by[j + 1], 1e3);
+          const slabX = box(bx[i], -1e4, -1e3, bx[i + 1], 1e4, 1e3);
+          const clip = (list, slab) => (list.length ? [t(t(Manifold.union(list)).intersect(slab))] : []);
+          const adds = [
+            ...(i < TX.length ? clip(TX[i].tab, slabY) : []),
+            ...(j < TY.length ? clip(TY[j].tab, slabX) : []),
+          ];
+          const subs = [
+            ...(i > 0 ? clip(TX[i - 1].sock, slabY) : []),
+            ...(j > 0 ? clip(TY[j - 1].sock, slabX) : []),
+          ];
+          if (adds.length) cell = t(Manifold.union([cell, ...adds]));
+          if (subs.length) cell = t(cell.subtract(t(Manifold.union(subs))));
+        }
         const piece = t(body.intersect(cell));
         if (piece.isEmpty()) continue;
         const explode = [(i - (L.nx - 1) / 2) * 40, j * 40, 0];

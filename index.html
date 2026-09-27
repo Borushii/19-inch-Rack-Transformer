@@ -55,13 +55,30 @@
       </fieldset>
 
       <fieldset>
+        <legend>Façade</legend>
+        <div class="seg">
+          <label><input type="radio" name="frontStyle" value="open" checked /> Ouverte (pattes + rebord bas)</label>
+          <label><input type="radio" name="frontStyle" value="grid" /> Ajourée (losanges)</label>
+          <label><input type="radio" name="frontStyle" value="full" /> Pleine</label>
+        </div>
+        <div class="only-open">
+          <p class="hint">Le plateau reste entièrement visible : les pattes sont reliées au fond par des joues latérales en pente.</p>
+          <label>Rebord avant (mm, 0 = aucun) <input type="number" name="frontLipHeight" value="12" min="0" max="180" /></label>
+        </div>
+        <div class="grid2 only-grid">
+          <label>Taille des losanges <input type="number" name="gridSize" value="18" min="6" max="60" /></label>
+          <label>Largeur nervures <input type="number" name="gridRib" value="4" min="2" max="15" step="0.5" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Structure</legend>
         <div class="grid2">
           <label>Épaisseur façade <input type="number" name="frontThickness" value="4" min="2" max="10" step="0.5" /></label>
           <label>Épaisseur fond <input type="number" name="baseThickness" value="3" min="1.5" max="10" step="0.5" /></label>
           <label>Rebords latéraux (0 = aucun) <input type="number" name="wallHeight" value="20" min="0" max="180" /></label>
           <label>Rebord arrière (0 = aucun) <input type="number" name="rearLipHeight" value="10" min="0" max="180" /></label>
-          <label>Renforts façade <input type="number" name="gussets" value="4" min="0" max="12" /></label>
+          <label class="not-open">Renforts façade <input type="number" name="gussets" value="4" min="0" max="12" /></label>
           <label>Épaisseur rebords <input type="number" name="wallThickness" value="3" min="1.5" max="10" step="0.5" /></label>
         </div>
         <label class="check"><input type="checkbox" name="vents" checked /> Fentes d’aération dans le fond</label>
@@ -113,6 +130,18 @@
           <label>Tronçons en profondeur
             <select name="splitY"><option value="auto" selected>Auto</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
           </label>
+        </div>
+        <label>Jonction des tronçons
+          <select name="joint">
+            <option value="dovetail" selected>Queues d’aronde collées (invisible)</option>
+            <option value="splice">Éclisses vissées (démontable)</option>
+          </select>
+        </label>
+        <div class="grid2 only-dovetail">
+          <label>Jeu d’emboîtement (mm) <input type="number" name="jointGap" value="0.15" min="0" max="0.6" step="0.05" /></label>
+          <label>Taille des tenons <input type="number" name="tabWidth" value="12" min="6" max="30" /></label>
+        </div>
+        <div class="grid2 only-splice">
           <label>Éclisses du fond
             <select name="spliceSide"><option value="top" selected>Dessus</option><option value="bottom">Dessous</option></select>
           </label>
@@ -146,7 +175,8 @@
       <details>
         <summary>Assemblage</summary>
         <ul class="help">
-          <li>Les tronçons se rejoignent par des <b>éclisses</b> vissées (M3 + écrous par défaut). Collez-les en plus pour plus de rigidité.</li>
+          <li><b>Queues d’aronde</b> : emboîtez les tronçons (tenons dans les mortaises) avec de la colle cyanoacrylate ou époxy ; la jonction est invisible une fois collée. Si c’est trop serré, augmentez le jeu (0,2–0,25 mm).</li>
+          <li><b>Éclisses</b> (option) : plaques vissées M3 + écrous, démontables.</li>
           <li>Façade : se visse sur les montants avant avec des vis M6 + écrous cage.</li>
           <li>En double fixation, les équerres se glissent par l’arrière, patte contre la face arrière des montants arrière, puis se vissent dans les trous des rebords.</li>
           <li>Impression conseillée : PETG ou ASA, 4 périmètres, 25–40 % de remplissage.</li>

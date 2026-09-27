@@ -78,6 +78,10 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
 .only-double { display: none; }
 form.double .only-double { display: block; }
 .bed-custom { display: none; }
+.only-open, .only-grid, .only-dovetail, .only-splice { display: none; }
+form.front-open .only-open { display: block; }
+form.front-grid .only-grid, form.joint-dovetail .only-dovetail, form.joint-splice .only-splice { display: grid; }
+form.front-open .not-open { display: none; }
 form.custom-bed .bed-custom { display: grid; }
 
 #viewer { position: relative; min-width: 0; min-height: 0; background: var(--viewer); }
