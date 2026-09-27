@@ -53,7 +53,7 @@ function updateFormState(p) {
   form.classList.toggle('double', p.mounting === 'double');
   form.classList.toggle('custom-bed', p.bedPreset === 'custom');
   for (const st of ['open', 'grid', 'full']) form.classList.toggle(`front-${st}`, p.frontStyle === st);
-  form.classList.toggle('joint-dovetail', p.joint !== 'splice');
+  form.classList.toggle('joint-key', p.joint !== 'splice');
   form.classList.toggle('joint-splice', p.joint === 'splice');
 }
 
@@ -144,7 +144,8 @@ function showModel() {
   const explode = document.getElementById('explode').checked;
   for (const part of current.parts) {
     const mat = new THREE.MeshStandardMaterial({ color: part.color, roughness: 0.6, metalness: 0.05 });
-    const mesh = new THREE.Mesh(geometryFrom(part.mesh), mat);
+    const src = explode && part.explodeMesh ? part.explodeMesh : part.mesh;
+    const mesh = new THREE.Mesh(geometryFrom(src), mat);
     if (explode && part.explode) mesh.position.set(...part.explode);
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(mesh.geometry, 30),
@@ -312,11 +313,12 @@ function renderParts() {
   partsEl.innerHTML = '';
   current.parts.forEach((part, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="sw" style="background:${part.color}"></span><span class="nm">${part.name}<small>${part.size.map(f1).join(' × ')} mm</small></span>`;
+    const qty = part.quantity > 1 ? ` <b>× ${part.quantity}</b>` : '';
+    li.innerHTML = `<span class="sw" style="background:${part.color}"></span><span class="nm">${part.name}${qty}<small>${part.size.map(f1).join(' × ')} mm</small></span>`;
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = 'STL';
-    b.addEventListener('click', () => download(toSTL(part.printMesh, part.name), `${baseName()}-${slug(part.name)}.stl`, 'model/stl'));
+    b.addEventListener('click', () => download(toSTL(part.printMesh, part.name), fileName(part), 'model/stl'));
     li.appendChild(b);
     partsEl.appendChild(li);
     void i;
@@ -325,6 +327,8 @@ function renderParts() {
 
 const slug = (s) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+
+const fileName = (p) => `${baseName()}-${slug(p.name)}${p.quantity > 1 ? `-x${p.quantity}` : ''}.stl`;
 
 function baseName() {
   const p = current.layout.params;
@@ -345,7 +349,7 @@ function download(data, name, type) {
 dl3mf.addEventListener('click', async () => {
   if (!current) return;
   const data = await to3MF(
-    current.parts.map((p) => ({ name: p.name, mesh: p.printMesh })),
+    current.parts.map((p) => ({ name: p.name, mesh: p.printMesh, quantity: p.quantity })),
     { bedWidth: current.layout.params.bedX },
   );
   download(data, `${baseName()}.3mf`, 'model/3mf');
@@ -353,7 +357,7 @@ dl3mf.addEventListener('click', async () => {
 
 dlstl.addEventListener('click', async () => {
   if (!current) return;
-  const files = current.parts.map((p) => ({ name: `${baseName()}-${slug(p.name)}.stl`, data: toSTL(p.printMesh, p.name) }));
+  const files = current.parts.map((p) => ({ name: fileName(p), data: toSTL(p.printMesh, p.name) }));
   download(await zip(files), `${baseName()}-stl.zip`, 'application/zip');
 });
 
