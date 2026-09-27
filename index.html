@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Plateau Rack 19"</title>
+  <meta name="description" content="Générateur de plateaux 19 pouces imprimables en 3D (STL / 3MF), profondeur réglable, fixation avant ou avant + arrière." />
+  <link rel="stylesheet" href="src/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Plateau rack 19″ <span>générateur STL / 3MF</span></h1>
+  </header>
+
+  <main>
+    <form id="form" autocomplete="off">
+      <fieldset>
+        <legend>Dimensions</legend>
+        <label>Hauteur
+          <select name="units">
+            <option value="1" selected>1U (43,7 mm)</option>
+            <option value="2">2U (88,1 mm)</option>
+            <option value="3">3U (132,6 mm)</option>
+            <option value="4">4U (177,0 mm)</option>
+          </select>
+        </label>
+        <label>Profondeur du plateau <output data-for="depth"></output>
+          <input type="range" name="depth" min="60" max="1200" step="5" value="250" />
+        </label>
+        <label class="inline">ou saisir (mm) <input type="number" data-mirror="depth" min="60" max="1200" step="1" value="250" /></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fixation</legend>
+        <div class="seg">
+          <label><input type="radio" name="mounting" value="front" checked /> Avant uniquement</label>
+          <label><input type="radio" name="mounting" value="double" /> Double : avant + arrière</label>
+        </div>
+        <div class="only-double">
+          <p class="hint">Deux équerres arrière coulissent le long des rebords et se vissent (M4) à la position voulue : la même pièce s’adapte à plusieurs profondeurs de baie.</p>
+          <label>Plage de réglage (mm) <input type="number" name="adjustRange" value="120" min="40" max="600" step="5" /></label>
+          <label>Pas des trous de réglage (mm) <input type="number" name="adjustPitch" value="20" min="10" max="50" /></label>
+          <label>Perçage vis d’équerre (mm) <input type="number" name="boltDiameter" value="4.4" min="2" max="8" step="0.1" /></label>
+          <label>Épaisseur patte arrière (mm) <input type="number" name="bracketThickness" value="5" min="2" max="10" step="0.5" /></label>
+          <div id="range" class="callout"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Structure</legend>
+        <div class="grid2">
+          <label>Épaisseur façade <input type="number" name="frontThickness" value="4" min="2" max="10" step="0.5" /></label>
+          <label>Épaisseur fond <input type="number" name="baseThickness" value="3" min="1.5" max="10" step="0.5" /></label>
+          <label>Rebords latéraux (0 = aucun) <input type="number" name="wallHeight" value="20" min="0" max="180" /></label>
+          <label>Rebord arrière (0 = aucun) <input type="number" name="rearLipHeight" value="10" min="0" max="180" /></label>
+          <label>Renforts façade <input type="number" name="gussets" value="4" min="0" max="12" /></label>
+          <label>Épaisseur rebords <input type="number" name="wallThickness" value="3" min="1.5" max="10" step="0.5" /></label>
+        </div>
+        <label class="check"><input type="checkbox" name="vents" checked /> Fentes d’aération dans le fond</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Trous de fixation rack</legend>
+        <div class="grid2">
+          <label>Forme
+            <select name="holeShape">
+              <option value="slot" selected>Oblong</option>
+              <option value="round">Rond</option>
+            </select>
+          </label>
+          <label>Diamètre (mm) <input type="number" name="holeDiameter" value="6.5" min="3" max="12" step="0.1" /></label>
+          <label>Trous par U
+            <select name="holePattern">
+              <option value="outer" selected>2 (haut + bas)</option>
+              <option value="all">3 (tous)</option>
+            </select>
+          </label>
+          <label>Longueur oblong <input type="number" name="slotLength" value="10" min="3" max="14" step="0.5" /></label>
+        </div>
+        <label class="check"><input type="checkbox" name="teardrop" checked /> Trous en goutte d’eau (impression sans support)</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Imprimante &amp; découpage</legend>
+        <label>Plateau d’impression
+          <select name="bedPreset">
+            <option value="180">180 × 180 (A1 mini, Prusa Mini)</option>
+            <option value="220">220 × 220 (Ender 3…)</option>
+            <option value="250">250 × 210 (Prusa MK4)</option>
+            <option value="256" selected>256 × 256 (Bambu X1 / P1 / A1)</option>
+            <option value="300">300 × 300</option>
+            <option value="350">350 × 350 (Voron 350)</option>
+            <option value="500">500 × 500 (grand format)</option>
+            <option value="custom">Personnalisé…</option>
+          </select>
+        </label>
+        <div class="grid2 bed-custom">
+          <label>X (mm) <input type="number" name="bedX" value="256" min="100" max="1000" /></label>
+          <label>Y (mm) <input type="number" name="bedY" value="256" min="100" max="1000" /></label>
+        </div>
+        <div class="grid2">
+          <label>Tronçons en largeur
+            <select name="splitX"><option value="auto" selected>Auto</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </label>
+          <label>Tronçons en profondeur
+            <select name="splitY"><option value="auto" selected>Auto</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </label>
+          <label>Éclisses du fond
+            <select name="spliceSide"><option value="top" selected>Dessus</option><option value="bottom">Dessous</option></select>
+          </label>
+          <label>Perçage vis d’éclisse <input type="number" name="spliceBoltDiameter" value="3.4" min="2" max="8" step="0.1" /></label>
+        </div>
+      </fieldset>
+    </form>
+
+    <section id="viewer">
+      <div id="canvas"></div>
+      <div id="status">Chargement du moteur 3D…</div>
+      <div class="view-tools">
+        <button type="button" data-view="iso">3D</button>
+        <button type="button" data-view="front">Face</button>
+        <button type="button" data-view="top">Dessus</button>
+        <button type="button" data-view="side">Côté</button>
+        <label class="check"><input type="checkbox" id="showRack" checked /> Montants</label>
+        <label class="check"><input type="checkbox" id="explode" /> Éclaté</label>
+      </div>
+    </section>
+
+    <aside id="side">
+      <div class="downloads">
+        <button type="button" id="dl3mf" class="primary" disabled>Télécharger .3mf</button>
+        <button type="button" id="dlstl" disabled>Toutes les pièces en .stl (.zip)</button>
+      </div>
+      <dl id="summary"></dl>
+      <ul id="warnings"></ul>
+      <h2>Pièces</h2>
+      <ul id="parts"></ul>
+      <details>
+        <summary>Assemblage</summary>
+        <ul class="help">
+          <li>Les tronçons se rejoignent par des <b>éclisses</b> vissées (M3 + écrous par défaut). Collez-les en plus pour plus de rigidité.</li>
+          <li>Façade : se visse sur les montants avant avec des vis M6 + écrous cage.</li>
+          <li>En double fixation, les équerres se glissent par l’arrière, patte contre la face arrière des montants arrière, puis se vissent dans les trous des rebords.</li>
+          <li>Impression conseillée : PETG ou ASA, 4 périmètres, 25–40 % de remplissage.</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
